@@ -1,6 +1,7 @@
 %{
 #include <string.h>
 #include <iostream>
+#include <stdio.h>
 #include "parser.tab.h"
 
 
@@ -20,26 +21,9 @@ bool strTooLong();
 void resetStr();
 int strLenErr();
 int reservedKeywordError();
+extern "C" void nextFile(FILE *bffr);
 
-class Program;
-class Classdecl;
-class Classdecls;
-class Vfcontent;
-class Vfcontents;
-class Feature;
-class Features;
-class Formalcontents;
-class Formalcontent;
-class Formalcontents;
-class Actuals;
-class Block;
-class Exp_node;
-class Actuals;
-class Casecontent;	
-class Cases;
-class Native;
-class Exp_assign;
-class Exp_assigns;
+
 
 %}
 
@@ -245,4 +229,9 @@ int strLenErr() {
 int reservedKeywordError() {
 	yylval.error_msg = (char*)"Keyword is reserved.";
 	return ERROR;	
+}
+
+void nextFile(FILE *bffr){
+	yyrestart(bffr);
+	//yylex();
 }

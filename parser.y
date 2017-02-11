@@ -8,6 +8,7 @@
 #include <list>
 #include <string>
 #include <stdio.h>
+//#include "lex.yy.c"
 
 
 
@@ -23,6 +24,7 @@ extern "C" int yylex();
 extern "C" int yyparse();
 extern "C" FILE *yyin;
 extern int line_num;
+extern "C" void nextFile(FILE *bffr);
  
 void yyerror(const char *s);
 %}
@@ -147,7 +149,7 @@ feature:
 	OVERRIDE DEF OBJECT_IDENTIFIER formals COLON TYPE_IDENTIFIER ASSIGN expression SEMICOLON 
 	{$$ = new F_overide_expr($3,$4,$6,$8);}|
 	OVERRIDE DEF OBJECT_IDENTIFIER formals COLON TYPE_IDENTIFIER ASSIGN NATIVE SEMICOLON
-	{$$ = new F_overide_expr($3,$4,$6va);} |
+	{$$ = new F_overide_nat($3,$4,$6);} |
 	DEF OBJECT_IDENTIFIER formals COLON TYPE_IDENTIFIER ASSIGN expression SEMICOLON 
 	{$$ = new F_expr($2,$3,$5,$7);}|
 	DEF OBJECT_IDENTIFIER formals COLON TYPE_IDENTIFIER ASSIGN NATIVE SEMICOLON 
@@ -245,8 +247,11 @@ casecontent:
 
 %%
 
-int main(int, char**) {
-	// open a file handle to a particular file:
+int main(int argc, char *argv[]) {
+
+	for (int i = 0; i < argc; ++i) {
+       	   cout << argv[i] << std::endl;
+    	}
 	FILE *basicCool = fopen("basic.cool", "r");
 	if(!basicCool){ cout<<"basic.cool not found."<<endl; return -1;}
 	FILE *myfile = fopen("test.file", "r");
@@ -257,10 +262,13 @@ int main(int, char**) {
 		return -1;
 	}
 	// set lex to read from it instead of defaulting to STDIN:
-	yyin = myfile;
+	yyin = basicCool;
 
 	// parse through the input until there is no more:
 	
+	yyparse();
+	yyin = myfile;
+	//nextFile(myfile);
 	yyparse();
 	
 	root->print(0);

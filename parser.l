@@ -196,10 +196,17 @@ yield		{return reservedKeywordError();}
 "/"		{ return DIVIDE; }
 "\n"            { ++line_num;}
 
+[ \r\t\v\f] {}
+
 {INTEGER}				{ yylval.integerVal = atoi(yytext); return INTEGER_CONST;}
 {LOWERCASE}{ALPANUMERIC}*		{ yylval.object_IdentifierVal = strdup(yytext); return OBJECT_IDENTIFIER; }
 {UPPERCASE}({ALPANUMERIC})*		{ yylval.type_IdentifierVal = strdup(yytext); return TYPE_IDENTIFIER; }
-.              ;
+
+.	{//catch all error.
+              yylval.error_msg = yytext;
+              return(ERROR);
+	}
+
 
 %%
 

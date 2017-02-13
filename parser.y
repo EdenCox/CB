@@ -127,7 +127,10 @@ classdecl:
 	OPEN_ACCOLADE features CLOSE_ACCOLADE {$10->append(new F_block(new Block(new NormalExpression(new This_exp()))));$$ = new Classdecl($2,$4,$7,$8,$10);}
 	/*class C(F ) extends C 0 (A) { X } =) class C(F ) extends C 0 (A) { X { this }}*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES EXTENDS NATIVE OPEN_ACCOLADE features CLOSE_ACCOLADE
-	{$$ = new Classdecl($2,$4,(char *)"Native",new Actuals(),$9);}
+	{$$ = new Classdecl($2,$4,(char *)"Native",new Actuals(),$9);}|
+	/*Error handling for class bodies*/
+	CLASS error OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE { yyclearin; $$ = NULL; }|
+	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES error CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE {yyclearin; $$ = NULL; }
 	;
 
 vfcontents:
@@ -142,7 +145,8 @@ vfcontent:
 
 features:
 	features feature {$1->append($2); $$ = $1;}|
-	feature {$$ = new Features($1);}
+	feature {$$ = new Features($1);}|
+	error {yyclearin; $$ = NULL; }
 	;
 
 feature:
@@ -228,7 +232,8 @@ expression:
 	INTEGER_CONST {$$ = new Int_const_exp($1);}| 
 	STRING_LITERAL {$$ = new String_lit_exp($1);}| 
 	BOOLEAN_CONST {$$ = new Bool_exp($1); }| 
-	THIS {$$ = new This_exp();}
+	THIS {$$ = new This_exp();}|
+	error {yyclearin; $$ = NULL; }
 	;
 
 cases:

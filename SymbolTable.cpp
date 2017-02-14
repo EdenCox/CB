@@ -126,7 +126,7 @@ int SymbolTable::checkVariable(string key, string value){
             int x = i.checkType(key,value);
             if (x == 1 )
                 return 1;
-            else if (x < error)
+            else if (x < 0)
                 error = x;
                 
         };

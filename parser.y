@@ -2,6 +2,7 @@
 #include "parser.h"
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <stdlib.h>
 #include <map>
@@ -254,27 +255,33 @@ casecontent:
 
 int main(int argc, char *argv[]) {
 
-	for (int i = 0; i < argc; ++i) {
-       	   cout << argv[i] << std::endl;
+	if(argc  <= 1){
+		cout<<"No Filename(s) given to parse"<<endl;
+		return -1;
+	}
+	std::ofstream baseFile("tempPars", std::ios_base::binary | std::ios_base::app);
+	std::ifstream first("basic.cool", std::ios_base::binary);
+
+	baseFile<< first.rdbuf();
+	for (int i = 1; i < argc; ++i) {
+       	   	cout << argv[i] << std::endl;
+		std::ifstream rest(argv[i], std::ios_base::binary);
+		baseFile<<rest.rdbuf();
     	}
-	FILE *basicCool = fopen("basic.cool", "r");
-	if(!basicCool){ cout<<"basic.cool not found."<<endl; return -1;}
-	FILE *myfile = fopen("test.file", "r");
-	//yydebug = 1;
-	// make sure it's valid:
+	baseFile<<endl;
+
+	FILE *myfile = fopen("tempPars", "r");
 	if (!myfile) {
 		cout << "I can't open test.file!" << endl;
 		return -1;
 	}
 	// set lex to read from it instead of defaulting to STDIN:
-	yyin = basicCool;
+	yyin = myfile;
 
 	// parse through the input until there is no more:
-	
 	yyparse();
-	yyin = myfile;
-	//nextFile(myfile);
-	yyparse();
+
+	remove( "tempPars" );//remove temp reading file.
 	
 	root->print(0);
 

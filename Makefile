@@ -8,6 +8,6 @@ parser.tab.c parser.tab.h: parser.y
 lex.yy.c: parser.l parser.tab.h
 	flex parser.l
 
-parser: lex.yy.c parser.cpp parser.h SymbolTable.cpp SymbolTable.h parser.tab.c parser.tab.h
-	${CCC} parser.tab.c lex.yy.c parser.cpp SymbolTable.cpp -lfl -o parser -std=c++11
+parser: lex.yy.c parser.cpp parser.h TypeChecker.cpp TypeChecker.h SymbolTable.cpp SymbolTable.h parser.tab.c parser.tab.h
+	${CCC} parser.tab.c lex.yy.c parser.cpp TypeChecker.cpp SymbolTable.cpp -lfl -o parser -std=c++11
 

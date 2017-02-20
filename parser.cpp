@@ -18,16 +18,20 @@ using namespace std;
   Assign_exp::Assign_exp(char* object_id,Exp_node* exp) : object_id(object_id),exp(exp) {}
   void Assign_exp::accept(Visitor* v){v->visit(this);}
   void Assign_exp::print(int indent) {cout<<object_id<<" = ";exp->print(indent);}
+
   
 
   Not_exp::Not_exp(Exp_node* exp) : exp(exp){}
   void Not_exp::accept(Visitor* v){v->visit(this);}
   void Not_exp::print(int indent) {cout<<"!";exp->print(indent);}
 
+  
+
 
   Uminus_exp::Uminus_exp(Exp_node* exp) : exp(exp){}
   void Uminus_exp::accept(Visitor* v){v->visit(this);}
   void Uminus_exp::print(int indent) {cout<<"-"; exp->print(indent);}
+
 
 
   Cond_exp::Cond_exp (Exp_node* precedence, Exp_node* then_exp, Exp_node* else_exp) :
@@ -42,6 +46,7 @@ using namespace std;
   void Loop_exp::print(int indent) {cout<<"while ("; precedence->print(indent); cout<<")"; body_exp->print(indent);}
 
 
+
   Super_exp::Super_exp(char* object_id, Actuals *body_exp) :
   object_id(object_id), body_exp(body_exp) {}
   void Super_exp::accept(Visitor* v){v->visit(this);}
@@ -52,6 +57,7 @@ using namespace std;
   object_id(object_id), body_exp(body_exp) {}
   void Object_exp::accept(Visitor* v){v->visit(this);}
   void Object_exp::print(int indent) {cout<<object_id<<"("; body_exp->print(indent); cout<<")";}
+
 
 
   Newtype_exp::Newtype_exp(char* type_id, Actuals *exp_body) :
@@ -65,10 +71,11 @@ using namespace std;
   void Block_exp::print(int indent) {cout<<"{"<<endl; blck->print(indent+1); cout<<"\n"<<std::string(indent,'\t')<<"}";}
 
 
+
   Paren_exp::Paren_exp(Exp_node* exp): exp(exp) {}
   void Paren_exp::accept(Visitor* v){v->visit(this);}
   void Paren_exp::print(int indent) {cout<<"("; exp->print(indent); cout<<")";}
-
+//continue here..
 
   Dot_object_exp::Dot_object_exp(Exp_node* exp, char* object_id, Actuals* exp_body) :
   exp(exp), object_id(object_id), body_exp(exp_body) {}
@@ -265,51 +272,4 @@ using namespace std;
   
   Visitor::Visitor() {}
   
-  TypeChecker::TypeChecker() : Visitor() {}
-  void TypeChecker::visit(Program* prgm) {prgm->classes->accept(this);}
-  void TypeChecker::visit(Classdecls* clssdcls) {for(auto &i : clssdcls->classdecls){i->accept(this);} {table.addScope(); for(auto &i : clssdcls->classdecls){i->accept(this);} table.removeScope();}}//add new scope foreach class
-  void TypeChecker::visit(Classdecl* clssdcl) {clssdcl->vfcontents->accept(this);clssdcl->features->accept(this);}
-  void TypeChecker::visit(Vfcontents* vfctnts) {for (auto &i: vfctnts->vfcontents){i->accept(this);}}
-  void TypeChecker::visit(Vfcontent* vfctnt) {table.addVariable(vfctnt->object_id,vfctnt->type_id);}
-  void TypeChecker::visit(Features* ftrs) {for (auto &i: ftrs->features){i->accept(this);}}
-  void TypeChecker::visit(F_block* ftr) {ftr->blck->accept(this);}
-  void TypeChecker::visit(F_expr* ftr) {table.addScope();ftr->formalcontents->accept(this); ftr->exp->accept(this); table.removeScope(); }//add new scope for method declarations.
-  void TypeChecker::visit(F_nat* ftr) {table.addScope();ftr->formalcontents->accept(this);table.removeScope();}
-  void TypeChecker::visit(F_overide_expr* ftr) {table.addScope();ftr->formalcontents->accept(this); ftr->exp->accept(this); table.removeScope();}
-  void TypeChecker::visit(F_overide_nat* ftr) {table.addScope();ftr->formalcontents->accept(this);table.removeScope();}
-  void TypeChecker::visit(F_var_exp* ftr) {table.addVariable(ftr->object_id, ftr->type_id);}
-  void TypeChecker::visit(F_var_nat* ftr) {table.addVariable(ftr->object_id, "native");}
-  void TypeChecker::visit(Formalcontents* frmlcntnts) {for (auto &i : frmlcntnts->formalcontents){i->accept(this);}}
-  void TypeChecker::visit(Formalcontent* frmlcntnt) {table.addVariable(frmlcntnt->object_id, frmlcntnt->type_id);}
-  void TypeChecker::visit(Actuals* actuals) {}// actuals??
-  void TypeChecker::visit(Block* block) {table.addScope(); for(auto &i : block->expressions){i->accept(this);} table.removeScope();}
-  void TypeChecker::visit(NormalExpression* blockexpression) {blockexpression->exp->accept(this);}
-  void TypeChecker::visit(InilizationBlockExpression* blockexpression) {table.addVariable(blockexpression->object_id,blockexpression->type_id);}
-  void TypeChecker::visit (Assign_exp* expression) {expression->exp->accept(this);}//???
-  void TypeChecker::visit (Not_exp* expression) {expression->exp->accept(this);}
-  void TypeChecker::visit (Uminus_exp* expression) {expression->exp->accept(this);}
-  void TypeChecker::visit (Cond_exp* expression) {expression->precedence->accept(this);expression->then_exp->accept(this);expression->else_exp->accept(this);}
-  void TypeChecker::visit (Loop_exp* expression) {expression->precedence->accept(this);expression->body_exp->accept(this);}
-  void TypeChecker::visit (Super_exp* expression) {}//???
-  void TypeChecker::visit (Object_exp* expression) {expression->body_exp->accept(this);}
-  void TypeChecker::visit (Newtype_exp* expression) {expression->body_exp->accept(this);}
-  void TypeChecker::visit (Block_exp* expression) {expression->blck->accept(this);}
-  void TypeChecker::visit (Paren_exp* expression) {expression->exp->accept(this);}
-  void TypeChecker::visit (Dot_object_exp* expression) {expression->exp->accept(this); expression->body_exp->accept(this);}    
-  void TypeChecker::visit (Case_exp* expression) {expression->exp->accept(this); expression->cases->accept(this);}
-  void TypeChecker::visit (Less_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Leq_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Eq_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Mul_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Div_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Add_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Min_exp* expression) {expression->exp1->accept(this); expression->exp2->accept(this);}
-  void TypeChecker::visit (Null_exp* expression) {}//??{}//??
-  void TypeChecker::visit (Empty_exp* expression) {}//??
-  void TypeChecker::visit (Object_id_exp* expression) {}//??
-  void TypeChecker::visit (Int_const_exp* expression) {}//??
-  void TypeChecker::visit (String_lit_exp* expression) {}//??
-  void TypeChecker::visit (Bool_exp* expression) {}//??
-  void TypeChecker::visit (This_exp* expression) {}//??
-  void TypeChecker::visit(Casecontent* casecontent) {casecontent->block->accept(this);}//??
-  void TypeChecker::visit(Cases* cases) {for(auto &i : cases->cases){i->accept(this);}}//??
+  

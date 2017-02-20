@@ -4,6 +4,8 @@
     <df root="." name="0">
       <in>SymbolTable.cpp</in>
       <in>SymbolTable.h</in>
+      <in>TypeChecker.cpp</in>
+      <in>TypeChecker.h</in>
       <in>lex.yy.c</in>
       <in>parser.cpp</in>
       <in>parser.h</in>

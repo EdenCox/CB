@@ -1,5 +1,6 @@
 %{
 #include "parser.h"
+#include "TypeChecker.h"
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -121,14 +122,14 @@ classdecls:
 	classdecl {$$ = new Classdecls($1);}       
 	;
 classdecl:
-	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE CLOSE_ACCOLADE {$$ = new Classdecl($2,$4,(char *)"Any",new Actuals(),new Features());}/*class C(F ) { X } =) class C(F ) extends Any() { X }*/|
+	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE CLOSE_ACCOLADE {$$ = new Classdecl($2,$4,"Any",new Actuals(),new Features());}/*class C(F ) { X } =) class C(F ) extends Any() { X }*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE 
-	{$$ = new Classdecl($2,$4,(char *)"Any",new Actuals(),$7);}/*class C(F ) { X } =) class C(F ) extends Any() { X }*/|
+	{$$ = new Classdecl($2,$4,"Any",new Actuals(),$7);}/*class C(F ) { X } =) class C(F ) extends Any() { X }*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES EXTENDS TYPE_IDENTIFIER actuals
 	OPEN_ACCOLADE features CLOSE_ACCOLADE {$10->append(new F_block(new Block(new NormalExpression(new This_exp()))));$$ = new Classdecl($2,$4,$7,$8,$10);}
 	/*class C(F ) extends C 0 (A) { X } =) class C(F ) extends C 0 (A) { X { this }}*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES EXTENDS NATIVE OPEN_ACCOLADE features CLOSE_ACCOLADE
-	{$$ = new Classdecl($2,$4,(char *)"Native",new Actuals(),$9);}|
+	{$$ = new Classdecl($2,$4,"native",new Actuals(),$9);}|
 	/*Error handling for class bodies*/
 	CLASS error OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE { yyclearin; $$ = NULL; }|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES error CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE {yyclearin; $$ = NULL; }
@@ -213,7 +214,7 @@ expression:
 	{$$ = new Loop_exp($3,$5);}| 
 	SUPER DOT OBJECT_IDENTIFIER actuals {$$ = new Super_exp($3,$4);}| 
 	OBJECT_IDENTIFIER actuals {$$ = new Object_exp($1,$2);}|
- 	NEW TYPE_IDENTIFIER actuals {$$ = new Dot_object_exp(new Paren_exp(new Object_id_exp($2)),$2,$3);/*$$ = new Newtype_exp($2,$3);*/}
+ 	NEW TYPE_IDENTIFIER actuals {/*$$ = new Dot_object_exp(new Paren_exp(new Object_id_exp($2)),$2,$3);*/$$ = new Newtype_exp($2,$3);}
 	/*new C(A) =) (new C).C(A)*/| 
 	OPEN_ACCOLADE block CLOSE_ACCOLADE {$$ = new Block_exp($2);}|  
 	OPEN_BRACKETS CLOSE_BRACKETS {$$ = new Empty_exp();}| 
@@ -272,7 +273,7 @@ int main(int argc, char *argv[]) {
 
 	FILE *myfile = fopen("tempPars", "r");
 	if (!myfile) {
-		cout << "I can't open test.file!" << endl;
+		cout << "can't open generated file." << endl;
 		return -1;
 	}
 	// set lex to read from it instead of defaulting to STDIN:
@@ -282,8 +283,12 @@ int main(int argc, char *argv[]) {
 	yyparse();
 
 	remove( "tempPars" );//remove temp reading file.
+
+	TypeChecker* checker = new TypeChecker();
+	root->accept(checker);
 	
-	root->print(0);
+	
+	//root->print(0);
 
 }
 

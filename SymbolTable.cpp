@@ -2,148 +2,270 @@
 
 using namespace std;
 
-TypeEntry::TypeEntry(string key, string value) : key(key), value(value) {}
+TypeEntry::TypeEntry() {
+}
 
-string TypeEntry::getKey() {return key;}
+TypeEntry::TypeEntry(string key, string value) : key(key), value(value) {
+}
 
-string TypeEntry::getValue() {return value;}
+string TypeEntry::getKey() {
+    return key;
+}
 
+string TypeEntry::getValue() {
+    return value;
+}
 
 TypeMap::TypeMap() {
-    table = new TypeEntry*[TABLE_SIZE];
-            for (int i = 0; i < TABLE_SIZE; i++)
-                  table[i] = NULL;
+
 }
 
 void TypeMap::put(string key, string value) {
-    table[currentLength] = new TypeEntry(key, value);
-    currentLength++;
-    /*while (table[hash] != NULL && table[hash]->getKey() != key)
-        hash = (hash + 1) % TABLE_SIZE;
-    if (table[hash] != NULL)
-        delete table[hash];
-    table[hash] = new HashEntry(key, value);
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        if (table[i] != NULL && table[i]->getKey() != key)
-        {
-            
-        }
-    }*/
+    table.push_back(TypeEntry(key, value));
 }
 
 //returns 1 if type matches, returns -1 if is mismatches , returns 0 if symbol isn't found.
-int TypeMap::checkType(string key, string value) {
 
-    for (int i = 0; i < currentLength; i++){
-        if (table[i]->getKey() == key)
-            if (table[i]->getValue() == value)
+int TypeMap::checkType(string key, string value) {
+    for (auto &i : table) {
+        if (i.getKey() == key)
+            if (i.getValue() == value)
                 return 1;
             else
                 return -1;
-        
     }
     return 0;
 }
-string TypeMap::getType(string key) {
-    for (int i = 0; i < currentLength; i++){
-        if (table[i]->getKey() == key)
-            return table[i]->getValue();        
+
+bool TypeMap::has(string key){
+    for (auto &i : table){
+        if (i.getKey() == key)
+            return true;
     }
-    return NULL;
+    false;
+}
+
+string TypeMap::getType(string key) {
+    for (auto &i : table) {
+        if (i.getKey() == key)
+            return i.getValue();
+    }
+    return "";
 }
 
 TypeMap::~TypeMap() {
-    /*
-    for (int i = 0; i < currentLength; i++) {
-        delete table[i];
-    }
-    delete [] table;*/
+
 }
 
-FunctionEntry::FunctionEntry(string className, string methodName) : className(className), methodName(methodName) {}
-FunctionEntry::FunctionEntry(string className, string methodName, list<string>* formals) : className(className), methodName(methodName), formals(formals)  {}
+FunctionEntry::FunctionEntry(string className, string methodName, string typeName) : className(className), methodName(methodName), typeName(typeName) {
+}
 
-void FunctionEntry::append(string formal) {formals->push_back(formal);}
-void FunctionEntry::append(list<string>* formals) {this->formals->insert(this->formals->end(),formals->begin(), formals->end());}
+FunctionEntry::FunctionEntry(string className, string methodName, string typeName, vector<string> formals) : className(className), methodName(methodName), typeName(typeName), formals(formals) {
+}
 
-string FunctionEntry::getClassName() {return className;}
-string FunctionEntry::getMethodName() {return methodName;}
-list<string>* FunctionEntry::getFormals() {return formals;}
+void FunctionEntry::append(string formal) {
+    formals.push_back(formal);
+}
 
-FunctionMap::FunctionMap() {}
+void FunctionEntry::append(vector<string> formals) {
+    this->formals.insert(this->formals.end(), formals.begin(), formals.end());
+}
 
-void FunctionMap::put(string className, string methodName, list<string>* formals) {table.push_back(FunctionEntry(className,methodName,formals));}
-list<string>* FunctionMap::GetFormalsType(string className, string methodName) {
-    for (auto &i: table){
-        if (i.getClassName() == className &&  i.getMethodName() == methodName)
+string FunctionEntry::getClassName() {
+    return className;
+}
+
+string FunctionEntry::getMethodName() {
+    return methodName;
+}
+
+string FunctionEntry::getTypeName() {
+    return typeName;
+}
+
+vector<string> FunctionEntry::getFormals() {
+    return formals;
+}
+
+FunctionMap::FunctionMap() {
+}
+
+void FunctionMap::put(string className, string methodName, string typeName, vector<string> formals) {
+    table.push_back(FunctionEntry(className, methodName, typeName, formals));
+}
+
+vector<string> FunctionMap::GetFormalsType(string className, string methodName) {
+    for (auto &i : table) {
+        if (i.getClassName() == className && i.getMethodName() == methodName)
             return i.getFormals();
     }
-    return new list<string> {"empty"};
+    return {"NOTYPE#"};
 }
 
-FunctionMap::~FunctionMap(){}
-
-ObjectEntry::ObjectEntry(string className, string extendsName) : className(className), extendsName(extendsName) {}
-string ObjectEntry::getClassName(){return className;}
-string ObjectEntry::getMethodName() {return extendsName;}
-
-ObjectMap::ObjectMap(){
-    table = new ObjectEntry*[TABLE_SIZE];
-            for (int i = 0; i < TABLE_SIZE; i++)
-                  table[i] = NULL;
+string FunctionMap::getMethodType(string className, string methodName) {
+    for (auto &i : table) {
+        if (i.getClassName() == className && i.getMethodName() == methodName)
+            return i.getTypeName();
+    }
+    return "";
 }
-bool ObjectMap::typeExists(string className){
-    for (int i = 0; i < currentLength; i++){
-        if (table[i]->getClassName() == className)
-            return true;        
+bool FunctionMap::hasMethod(string className,string methodName){
+    for (auto &i : table) {
+        if (i.getClassName() == className && i.getMethodName() == methodName)
+            return true;
     }
     return false;
 }
-void ObjectMap::put(string className, string extendsName){
-    table[currentLength] = new ObjectEntry(className, extendsName);
-    currentLength++;
+FunctionMap::~FunctionMap() {
 }
 
-string ObjectMap::getExtendsName(string className){
-    for (int i = 0; i < currentLength; i++){
-        if (table[i]->getClassName() == className)
-            return table[i]->getMethodName();        
+ObjectEntry::ObjectEntry(string className, string extendsName) : className(className), extendsName(extendsName) {
+}
+
+string ObjectEntry::getClassName() {
+    return className;
+}
+
+string ObjectEntry::getMethodName() {
+    return extendsName;
+}
+
+ObjectMap::ObjectMap() {}
+
+bool ObjectMap::typeExists(string className) {
+    for (auto &i : table) {
+        if (i.getClassName() == className)
+            return true;
     }
-    return NULL;
+    return false;
 }
 
-ObjectMap::~ObjectMap(){}
-
-
-
-SymbolTable::SymbolTable(){/*table.push_back(TypeMap());*/ fTable = FunctionMap(); oTable = ObjectMap();}
-void SymbolTable::addScope(){rTable.push_back(TypeMap());}
-void SymbolTable::removeScope(){rTable.pop_back(); }
-void SymbolTable::addVariable(string key, string value){rTable.back().put(key,value);}
-int SymbolTable::checkVariable(string key, string value){
-    int error = 0;
-        for (auto &i: rTable){
-            int x = i.checkType(key,value);
-            if (x == 1 )
-                return 1;
-            else if (x < 0)
-                error = x;
-                
-        };
-    return error;
+void ObjectMap::put(string className, string extendsName) {
+    table.push_back(ObjectEntry(className, extendsName));
 }
+
+string ObjectMap::getExtendsName(string className) {
+     for (auto &i : table) {
+        if (i.getClassName() == className)
+            return i.getMethodName();
+    }
+    return "";
+}
+
+ObjectMap::~ObjectMap() {
+}
+
+SymbolTable::SymbolTable() {
+    rTable.push_back(TypeMap());
+    fTable = FunctionMap();
+    oTable = ObjectMap();
+    addClassName("native","");
+    addClassMethod("native","native","native",{});
+}
+
+void SymbolTable::addScope() {
+    rTable.push_back(TypeMap());
+}
+
+void SymbolTable::removeScope() {
+    rTable.pop_back();
+}
+
+void SymbolTable::addVariable(string key, string value) {
+    rTable.back().put(key, value);
+}
+bool SymbolTable::checkVariable(string key){
+     for (auto &i : rTable){
+         if(i.has(key))
+             return true;
+     }
+     return false;
+}
+
+
+int SymbolTable::checkVariable(string key, string value) {
+    for (auto &i : rTable) {
+        int x = i.checkType(key, value);
+        if (x == 1)
+            return 1;
+        else if (x == -1)
+            return -1;
+
+    };
+    return 0;
+}
+
 string SymbolTable::getType(string key) {
-    return getType(key);
-}
-void SymbolTable::addClassMethod(string className, string methodName, list<string>* formals){
-    fTable.put(className,methodName,formals);
+    string type;
+    for (auto &i : rTable) {
+        type = i.getType(key);
+        if (!type.empty()) {
+            return type;
+        }
+    }
+    return "";
 }
 
-list <string>* SymbolTable::getFormalsType(string className, string methodName){
-    return fTable.GetFormalsType(className,methodName);
+void SymbolTable::addClassMethod(string className, string methodName, string typeName, vector<string> formals) {
+    fTable.put(className, methodName, typeName, formals);
 }
 
-void SymbolTable::addClassName(string className, string extendsName){oTable.put(className, extendsName);}
-bool SymbolTable::typeExists(string className){return oTable.typeExists(className);}
-string SymbolTable::getExtendsName(string className){return oTable.getExtendsName(className);}
+vector <string> SymbolTable::getFormalsType(string className, string methodName) {
+    vector <string> formaltypes = fTable.GetFormalsType(className, methodName);
+    if(formaltypes.size() == 1 && formaltypes.at(0) == "NOTYPE#"){
+        formaltypes = fTable.GetFormalsType(getExtendsName(className),methodName);
+    }
+    return formaltypes;
+}
+
+bool SymbolTable::hasMethod(string className, string methodName){
+    bool has = fTable.hasMethod(className,methodName);
+    if(!has)
+        return fTable.hasMethod(getExtendsName(className),methodName);
+    return has;
+}
+
+void SymbolTable::addClassName(string className, string extendsName) {
+    oTable.put(className, extendsName);
+}
+
+bool SymbolTable::typeExists(string className) {
+    return oTable.typeExists(className);
+}
+
+string SymbolTable::getExtendsName(string className) {
+    return oTable.getExtendsName(className);
+}
+
+string SymbolTable::getMethodType(string className, string methodName) {
+    string type = fTable.getMethodType(className, methodName);
+    if(type == "")
+        type = fTable.getMethodType(getExtendsName(className), methodName);
+    return type;
+}
+
+string SymbolTable::getLUB(string type1, string type2) {
+    string lub1 = type1;
+    string lub2 = type2;
+    while (lub1 != lub2) {
+        lub2 = getExtendsName(lub2);
+        if (lub2 == "") {
+            lub2 = type2;
+            lub1 = getExtendsName(lub1);
+            if (lub1 == "")
+                return lub1;
+        }
+    }
+    return lub1;
+}
+
+bool SymbolTable::isParentype(string parent, string child) {
+    while(parent != child){
+        child = getExtendsName(child);
+        if(child == "")
+            return false;
+    }
+    return true;
+}
+
 

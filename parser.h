@@ -369,6 +369,7 @@ class Feature : public TreeNode{
 class Features : public TreeNode{
 public:
  list<Feature*> features;
+ 
 public:
  Features();
  Features(Feature* feature);

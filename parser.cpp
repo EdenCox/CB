@@ -202,6 +202,7 @@ using namespace std;
   Features::Features() {}
   Features::Features(Feature* feature) {features.push_back(feature); }
   void Features::append(Feature* feature) {features.push_back(feature);}
+
   void Features::accept(Visitor* v){v->visit(this);}
   void Features::print(int indent) {for(auto &feature : features){feature->print(indent); cout<<";"<<endl;}}
 

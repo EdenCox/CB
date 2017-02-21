@@ -75,7 +75,7 @@ void yyerror(const char *s);
 %type <vfcontent> vfcontent
 %type <vfcontents> vfcontents
 %type <features> features
-%type <feature> feature	
+%type <feature> feature
 %type <formalcontents> formals
 %type <formalcontent> formalcontent
 %type <formalcontents> formalcontents
@@ -147,7 +147,7 @@ vfcontent:
 
 features:
 	features feature {$1->append($2); $$ = $1;}|
-	feature {$$ = new Features($1);}|
+	feature {$$ = new Features(); $$->append($1);}|
 	error {yyclearin; $$ = NULL; }
 	;
 

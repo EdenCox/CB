@@ -22,9 +22,13 @@ void TypeChecker::visit(Classdecls* clssdcls) {
             compile = false;
         }
     }
+    MethodAdder *adder = new MethodAdder(table);
     for (auto &i : clssdcls->classdecls) {
         addMethod(i->type_id, i->vfcontents);
+        adder->changeClassName(i->type_id);
+        i->features->accept(adder);
     }
+    delete adder;
     //table.addScope(); 
     for (auto &i : clssdcls->classdecls) {
         i->accept(this);
@@ -92,38 +96,40 @@ void TypeChecker::visit(F_block* ftr) {
 }
 
 void TypeChecker::visit(F_expr* ftr) {
-    addMethod(currentClass, ftr);
+    //addMethod(currentClass, ftr);
     table.addScope();
     ftr->formalcontents->accept(this);
     ftr->exp->accept(this);
     //string type = checkType(ftr->exp);
-    if (lastType != ftr->type_id)
-        cout << "Function type: " << ftr->type_id << "Doesn't match the function return type of " << lastType << endl;
-    compile = false;
+    if (lastType != ftr->type_id && ftr->type_id != "Unit" && lastType != "Nothing") {
+        cout << "In Class " << currentClass << " function type: " << ftr->type_id << " Doesn't match the function return type of " << lastType << endl;
+        compile = false;
+    }
     table.removeScope();
 }//add new scope for method declarations.
 
 void TypeChecker::visit(F_nat* ftr) {
-    addMethod(currentClass, ftr);
+    //addMethod(currentClass, ftr);
     table.addScope();
     ftr->formalcontents->accept(this);
     table.removeScope();
 }
 
 void TypeChecker::visit(F_overide_expr* ftr) {
-    addMethod(currentClass, ftr);
+    //addMethod(currentClass, ftr);
     table.addScope();
     ftr->formalcontents->accept(this);
     //string type = checkType(ftr->exp);
     ftr->exp->accept(this);
-    if (lastType != ftr->type_id)
+    if (lastType != ftr->type_id && ftr->type_id != "Unit" && lastType != "Nothing") {
         cout << "Class: " << currentClass << " Error - Function type: " << ftr->type_id << "Doesn't match the function return type of " << lastType << endl;
-    compile = false;
+        compile = false;
+    }
     table.removeScope();
 }//TODO: check if the method that you're overriding exists..
 
 void TypeChecker::visit(F_overide_nat* ftr) {
-    addMethod(currentClass, ftr);
+    //addMethod(currentClass, ftr);
     table.addScope();
     ftr->formalcontents->accept(this);
     table.removeScope();
@@ -131,15 +137,15 @@ void TypeChecker::visit(F_overide_nat* ftr) {
 
 void TypeChecker::visit(F_var_exp* ftr) {
     ftr->exp->accept(this);
-    if (lastType != ftr->type_id) {
-        cout << "The expression type of " << lastType << " doesn't match the var type of " << ftr->type_id << endl;
+    if (lastType != ftr->type_id && lastType != "Null") {//TODO: check if type you're nulling is allowed
+        cout << "in Class: " << currentClass << " the expression type of " << lastType << " doesn't match the var type of " << ftr->type_id << endl;
         compile = false;
     }
     if (table.typeExists(ftr->type_id)) {
         if (!table.checkVariable(ftr->object_id))
             table.addVariable(ftr->object_id, ftr->type_id);
         else {
-            cout << "Class: " << currentClass << " Error - variable: " << ftr->type_id << " has already been declared." << endl;
+            cout << "in Class: " << currentClass << " Error - variable: " << ftr->type_id << " has already been declared." << endl;
             compile = false;
         }
 
@@ -153,7 +159,7 @@ void TypeChecker::visit(F_var_exp* ftr) {
 
 void TypeChecker::visit(F_var_nat* ftr) {
     table.addVariable(ftr->object_id, "native");
-}
+}//double check rule..
 
 void TypeChecker::visit(Formalcontents* frmlcntnts) {
     for (auto &i : frmlcntnts->formalcontents) {
@@ -199,6 +205,8 @@ void TypeChecker::visit(Assign_exp* expression) {
     expression->exp->accept(this);
     if (!(table.isParentype(type, lastType))) {
         cout << "Class: " << currentClass << " Error - Type mismatch when assigning to the variable " << expression->object_id << endl;
+        cout << "Variable type: " << type << endl;
+        cout << "Expression type: " << lastType << endl;
         compile = false;
     }
 }
@@ -223,7 +231,9 @@ void TypeChecker::visit(Cond_exp* expression) {
 
     expression->precedence->accept(this);
     if (lastType != "Boolean") {
-        cout << "Precedence of the if expression is not of Boolean type" << endl;
+        cout << "In Class " << currentClass << " Precedence of the if expression is not of Boolean type" << endl;
+        cout << lastType << endl << endl;
+        ;
         compile = false;
     }
     table.addScope();
@@ -241,7 +251,7 @@ void TypeChecker::visit(Cond_exp* expression) {
 void TypeChecker::visit(Loop_exp* expression) {
     expression->precedence->accept(this);
     if (lastType != "Boolean") {
-        cout << "Precedence of the if expression is not of Boolean type" << endl;
+        cout << "In Class" << currentClass << " Precedence of the loop expression is not of Boolean type" << endl;
         compile = false;
     }
 
@@ -270,7 +280,7 @@ void TypeChecker::visit(Super_exp* expression) {
             compile = false;
         }
         lastType = table.getMethodType(superClass, expression->object_id);
-    }  else {
+    } else {
         cout << "In Class " << currentClass << " does not contain method: " << expression->object_id << endl;
         compile = false;
     }
@@ -279,6 +289,7 @@ void TypeChecker::visit(Super_exp* expression) {
 }//Check the super method call
 
 void TypeChecker::visit(Object_exp* expression) {
+    //cout<<"Visited!!"<endl<<endl;
     if (table.hasMethod(currentClass, expression->object_id)) {
         vector<string> parameterTypes = table.getFormalsType(currentClass, expression->object_id);
         if (parameterTypes.size() == expression->body_exp->expressions.size()) {
@@ -303,8 +314,28 @@ void TypeChecker::visit(Object_exp* expression) {
 }
 
 void TypeChecker::visit(Newtype_exp* expression) {
-    expression->body_exp->accept(this);
-}//Todo :: find a way to check constructor calls
+    lastType = "ERROR";
+    if (table.hasMethod(expression->type_id, expression->type_id)) {
+        vector<string> parameterTypes = table.getFormalsType(expression->type_id, expression->type_id);
+        if (parameterTypes.size() == expression->body_exp->expressions.size()) {
+            for (int i = 0; i < parameterTypes.size(); i++) {
+                expression->body_exp->expressions.at(i)->accept(this);
+                if (!table.isParentype(parameterTypes.at(i), lastType)) {
+                    cout << "In Class " << currentClass << " Constructor " << expression->type_id << " parameter number #" << i << " does not match with the given expression" << endl;
+                    compile = false;
+                }
+            }
+            lastType = table.getMethodType(expression->type_id, expression->type_id);
+        } else {
+            cout << "In Class " << currentClass << " the constructor call " << expression->type_id << " does not have the right amount of parameters" << endl;
+            cout << "# of parameters in method: " << parameterTypes.size() << endl;
+            cout << "# of parameters given: " << expression->body_exp->expressions.size() << endl << endl;
+            compile = false;
+        }
+    } else {
+        cout << "In Class " << currentClass << " Type " << expression->type_id << " does not exist" << endl;
+    }
+}
 
 void TypeChecker::visit(Block_exp* expression) {
     table.addScope();
@@ -482,20 +513,21 @@ void TypeChecker::visit(Cases* cases) {
     }
     lastType = lubType;
 }
+//Utility methods
 
-void TypeChecker::addMethod(string className, F_expr* ftr) {
+void MethodAdder::addMethod(string className, F_expr* ftr) {
     table.addClassMethod(className, ftr->object_id, ftr->type_id, formalContentTypeList(ftr->formalcontents));
 }
 
-void TypeChecker::addMethod(string className, F_nat* ftr) {
+void MethodAdder::addMethod(string className, F_nat* ftr) {
     table.addClassMethod(className, ftr->object_id, ftr->type_id, formalContentTypeList(ftr->formalcontents));
 }
 
-void TypeChecker::addMethod(string className, F_overide_expr* ftr) {
+void MethodAdder::addMethod(string className, F_overide_expr* ftr) {
     table.addClassMethod(className, ftr->object_id, ftr->type_id, formalContentTypeList(ftr->formalcontents));
 }
 
-void TypeChecker::addMethod(string className, F_overide_nat* ftr) {
+void MethodAdder::addMethod(string className, F_overide_nat* ftr) {
     table.addClassMethod(className, ftr->object_id, ftr->type_id, formalContentTypeList(ftr->formalcontents));
 }
 
@@ -503,7 +535,7 @@ void TypeChecker::addMethod(string className, Vfcontents* vfcontents) {
     table.addClassMethod(className, className, className, formalContentTypeList(vfcontents));
 }
 
-vector<string> TypeChecker::formalContentTypeList(Formalcontents* frmlcnts) {
+vector<string> MethodAdder::formalContentTypeList(Formalcontents* frmlcnts) {
     vector<string> formalTypes;
     for (auto &i : frmlcnts->formalcontents) {
         formalTypes.push_back(i->type_id);
@@ -518,5 +550,167 @@ vector<string> TypeChecker::formalContentTypeList(Vfcontents* vfcnts) {
     }
     return formalTypes;
 }
+
+//MethodAdder methods
+
+MethodAdder::MethodAdder(SymbolTable& table) : Visitor(), table(table) {
+}
+
+void MethodAdder::changeClassName(string newClassName) {
+    className = newClassName;
+}
+
+void MethodAdder::visit(Features* ftrs) {
+    for (auto &i : ftrs->features) {
+        i->accept(this);
+    }
+}
+
+void MethodAdder::visit(F_expr* ftr) {
+    addMethod(className, ftr);
+}
+
+void MethodAdder::visit(F_nat* ftr) {
+    addMethod(className, ftr);
+}
+
+void MethodAdder::visit(F_overide_expr* ftr) {
+    addMethod(className, ftr);
+}
+
+void MethodAdder::visit(F_overide_nat* ftr) {
+    addMethod(className, ftr);
+}
+
+void MethodAdder::visit(F_var_exp* ftr) {
+    //ignore not a method
+}
+
+void MethodAdder::visit(F_var_nat* ftr) {
+    //ignore not a method
+}
+
+void MethodAdder::visit(F_block* ftr) {
+    //ignore not a method
+}
+
+void MethodAdder::visit(Program* prgm) {
+}
+
+void MethodAdder::visit(Classdecls* clssdcls) {
+}
+
+void MethodAdder::visit(Classdecl* clssdcl) {
+}
+
+void MethodAdder::visit(Vfcontents* vfctnts) {
+}
+
+void MethodAdder::visit(Vfcontent* vfctnt) {
+}
+
+void MethodAdder::visit(Formalcontents* frmlcntnts) {
+}
+
+void MethodAdder::visit(Formalcontent* frmlcntnt) {
+}
+
+void MethodAdder::visit(Actuals* actuals) {
+}
+
+void MethodAdder::visit(Block* block) {
+}
+
+void MethodAdder::visit(NormalExpression* blockexpression) {
+}
+
+void MethodAdder::visit(InilizationBlockExpression* blockexpression) {
+}
+
+void MethodAdder::visit(Assign_exp* expression) {
+}
+
+void MethodAdder::visit(Not_exp* expression) {
+}
+
+void MethodAdder::visit(Uminus_exp* expression) {
+}
+
+void MethodAdder::visit(Cond_exp* expression) {
+}
+
+void MethodAdder::visit(Loop_exp* expression) {
+}
+
+void MethodAdder::visit(Super_exp* expression) {
+}
+
+void MethodAdder::visit(Object_exp* expression) {
+}
+
+void MethodAdder::visit(Newtype_exp* expression) {
+}
+
+void MethodAdder::visit(Block_exp* expression) {
+}
+
+void MethodAdder::visit(Paren_exp* expression) {
+}
+
+void MethodAdder::visit(Dot_object_exp* expression) {
+}
+
+void MethodAdder::visit(Case_exp* expression) {
+}
+
+void MethodAdder::visit(Less_exp* expression) {
+}
+
+void MethodAdder::visit(Leq_exp* expression) {
+}
+
+void MethodAdder::visit(Eq_exp* expression) {
+}
+
+void MethodAdder::visit(Mul_exp* expression) {
+}
+
+void MethodAdder::visit(Div_exp* expression) {
+}
+
+void MethodAdder::visit(Add_exp* expression) {
+}
+
+void MethodAdder::visit(Min_exp* expression) {
+}
+
+void MethodAdder::visit(Null_exp* expression) {
+}
+
+void MethodAdder::visit(Empty_exp* expression) {
+}
+
+void MethodAdder::visit(Object_id_exp* expression) {
+}
+
+void MethodAdder::visit(Int_const_exp* expression) {
+}
+
+void MethodAdder::visit(String_lit_exp* expression) {
+}
+
+void MethodAdder::visit(Bool_exp* expression) {
+}
+
+void MethodAdder::visit(This_exp* expression) {
+}
+
+void MethodAdder::visit(Casecontent* casecontent) {
+}
+
+void MethodAdder::visit(Cases* cases) {
+}
+
+
 
 

@@ -211,17 +211,21 @@ void SymbolTable::addClassMethod(string className, string methodName, string typ
 }
 
 vector <string> SymbolTable::getFormalsType(string className, string methodName) {
-    vector <string> formaltypes = fTable.GetFormalsType(className, methodName);
-    if(formaltypes.size() == 1 && formaltypes.at(0) == "NOTYPE#"){
-        formaltypes = fTable.GetFormalsType(getExtendsName(className),methodName);
+    vector <string> formaltypes = {"NOTYPE#"}; //= fTable.GetFormalsType(className, methodName);
+    while(formaltypes.size() == 1 && formaltypes.at(0) == "NOTYPE#" && className != ""){       
+        formaltypes = fTable.GetFormalsType(className,methodName);
+        className = getExtendsName(className);
     }
     return formaltypes;
 }
 
 bool SymbolTable::hasMethod(string className, string methodName){
-    bool has = fTable.hasMethod(className,methodName);
-    if(!has)
-        return fTable.hasMethod(getExtendsName(className),methodName);
+    bool has = false;
+    while(!has && className != ""){       
+        has = fTable.hasMethod(className,methodName);
+        className = getExtendsName(className);
+    }
+        
     return has;
 }
 
@@ -238,9 +242,11 @@ string SymbolTable::getExtendsName(string className) {
 }
 
 string SymbolTable::getMethodType(string className, string methodName) {
-    string type = fTable.getMethodType(className, methodName);
-    if(type == "")
-        type = fTable.getMethodType(getExtendsName(className), methodName);
+    string type = "";
+    while(type == "" && className != ""){  
+        type = fTable.getMethodType(className, methodName);
+        className = getExtendsName(className);    
+    }
     return type;
 }
 

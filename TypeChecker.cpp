@@ -3,6 +3,10 @@
 TypeChecker::TypeChecker() : Visitor() {
 }
 
+bool TypeChecker::make(){
+    return compile;
+}
+
 void TypeChecker::visit(Program* prgm) {
     prgm->classes->accept(this);
 
@@ -13,6 +17,11 @@ void TypeChecker::visit(Classdecls* clssdcls) {
         if (!table.typeExists(i->type_id)) {
             if (table.typeExists(i->extend_type_id)) {
                 table.addClassName(i->type_id, i->extend_type_id);
+                vector<TypeEntry> entries;
+                for (auto &j : i->vfcontents->vfcontents) {
+                    entries.push_back(TypeEntry(j->object_id, j->type_id));
+                }
+                table.addEntries(i->type_id, entries);
             } else {
                 cout << "Type name " << i->extend_type_id << " doesn't exists" << endl;
                 compile = false;
@@ -39,7 +48,10 @@ void TypeChecker::visit(Classdecls* clssdcls) {
 void TypeChecker::visit(Classdecl* clssdcl) {
     currentClass = clssdcl->type_id;
     table.addScope(); //CONTINUE HERE CHECK ACTUALS OF THE CLASS!
+
     clssdcl->vfcontents->accept(this);
+
+    table.addParentsAttributes(currentClass);
 
     string extendedClass = table.getExtendsName(currentClass);
     vector<string> superConstuctor = table.getFormalsType(extendedClass, extendedClass);
@@ -58,8 +70,6 @@ void TypeChecker::visit(Classdecl* clssdcl) {
         compile = false;
     }
     table.removeScope();
-
-
 
     clssdcl->features->accept(this);
     table.removeScope();
@@ -102,7 +112,7 @@ void TypeChecker::visit(F_expr* ftr) {
     ftr->exp->accept(this);
     //string type = checkType(ftr->exp);
     if (lastType != ftr->type_id && ftr->type_id != "Unit" && lastType != "Nothing") {
-        cout << "In Class " << currentClass << " function type: " << ftr->type_id << " Doesn't match the function return type of " << lastType << endl;
+        cout << "In Class " << currentClass << " function " << ftr->object_id << " type: " << ftr->type_id << " Doesn't match the function return type of " << lastType << endl;
         compile = false;
     }
     table.removeScope();
@@ -268,7 +278,7 @@ void TypeChecker::visit(Super_exp* expression) {
             for (int i = 0; i < parameterTypes.size(); i++) {
                 expression->body_exp->expressions.at(i)->accept(this);
                 if (!table.isParentype(parameterTypes.at(i), lastType)) {
-                    cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number " << i << " does not match with the expression" << endl;
+                    cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number #" << i + 1 << " does not match with the expression" << endl;
                     compile = false;
                 }
             }
@@ -289,14 +299,13 @@ void TypeChecker::visit(Super_exp* expression) {
 }//Check the super method call
 
 void TypeChecker::visit(Object_exp* expression) {
-    //cout<<"Visited!!"<endl<<endl;
     if (table.hasMethod(currentClass, expression->object_id)) {
         vector<string> parameterTypes = table.getFormalsType(currentClass, expression->object_id);
         if (parameterTypes.size() == expression->body_exp->expressions.size()) {
             for (int i = 0; i < parameterTypes.size(); i++) {
                 expression->body_exp->expressions.at(i)->accept(this);
                 if (!table.isParentype(parameterTypes.at(i), lastType)) {
-                    cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number " << i << " does not match with the expression" << endl;
+                    cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number #" << i + 1 << " does not match with the expression" << endl;
                     compile = false;
                 }
             }
@@ -321,7 +330,7 @@ void TypeChecker::visit(Newtype_exp* expression) {
             for (int i = 0; i < parameterTypes.size(); i++) {
                 expression->body_exp->expressions.at(i)->accept(this);
                 if (!table.isParentype(parameterTypes.at(i), lastType)) {
-                    cout << "In Class " << currentClass << " Constructor " << expression->type_id << " parameter number #" << i << " does not match with the given expression" << endl;
+                    cout << "In Class " << currentClass << " Constructor " << expression->type_id << " parameter number #" << i + 1 << " does not match with the given expression" << endl;
                     compile = false;
                 }
             }
@@ -359,8 +368,8 @@ void TypeChecker::visit(Dot_object_exp* expression) {
 
         for (int i = 0; i < parameterTypes.size(); i++) {
             expression->body_exp->expressions.at(i)->accept(this);
-            if (!table.isParentype(parameterTypes.at(i), lastType)) {
-                cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number " << i << " does not match with the expression" << endl;
+            if (!table.isParentype(parameterTypes.at(i), lastType) && lastType != "Null") {
+                cout << "In Class " << currentClass << " method " << expression->object_id << " parameter number #" << i + 1 << " does not match with the expression" << lastType << endl;
                 compile = false;
             }
         }

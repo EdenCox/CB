@@ -17,6 +17,7 @@ private:
 
 public:
     TypeChecker();
+    bool make();
     using Visitor::visit;
     void visit(Program* prgm) override;
     void visit(Classdecls* clssdcls) override;

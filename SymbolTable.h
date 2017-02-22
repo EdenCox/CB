@@ -88,13 +88,34 @@ public:
       ~ObjectMap();
 };
 
+class classFormals{
+private:
+    string className;
+    vector<TypeEntry> attributes;
+public:
+    classFormals(string className, vector<TypeEntry> attributes);
+    string getClassName();
+    vector<TypeEntry> getAttributes();
+};//Continue here add something that adds all classes types;
 
+class classFormalsEntries{
+private:
+    vector<classFormals> classformals;
+    
+public:
+    classFormalsEntries();
+    bool hasClass(string className);
+    void addEntry(classFormals entry);
+    vector<TypeEntry> getClassAttributes(string className);
+    
+};
 
 class SymbolTable {
 private:
     list<TypeMap> rTable;
     FunctionMap fTable;
     ObjectMap oTable;
+    classFormalsEntries classEntries;
     
 public:
     SymbolTable();
@@ -113,6 +134,9 @@ public:
     string getMethodType(string className,string methodName);//get the method return type of a class
     string getLUB(string type1, string type2);//get the LUB of 2 types.
     bool isParentype(string parent,string child);
+    void addEntries(classFormals entries);
+    void addEntries(string className, vector<TypeEntry> entries);
+    void addParentsAttributes(string className);
 };
 #endif	// SYMBOLTABLE_H
 

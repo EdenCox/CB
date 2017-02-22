@@ -37,8 +37,8 @@ int TypeMap::checkType(string key, string value) {
     return 0;
 }
 
-bool TypeMap::has(string key){
-    for (auto &i : table){
+bool TypeMap::has(string key) {
+    for (auto &i : table) {
         if (i.getKey() == key)
             return true;
     }
@@ -99,7 +99,10 @@ vector<string> FunctionMap::GetFormalsType(string className, string methodName) 
         if (i.getClassName() == className && i.getMethodName() == methodName)
             return i.getFormals();
     }
-    return {"NOTYPE#"};
+    return
+    {
+        "NOTYPE#"
+    };
 }
 
 string FunctionMap::getMethodType(string className, string methodName) {
@@ -109,13 +112,15 @@ string FunctionMap::getMethodType(string className, string methodName) {
     }
     return "";
 }
-bool FunctionMap::hasMethod(string className,string methodName){
+
+bool FunctionMap::hasMethod(string className, string methodName) {
     for (auto &i : table) {
         if (i.getClassName() == className && i.getMethodName() == methodName)
             return true;
     }
     return false;
 }
+
 FunctionMap::~FunctionMap() {
 }
 
@@ -130,7 +135,8 @@ string ObjectEntry::getMethodName() {
     return extendsName;
 }
 
-ObjectMap::ObjectMap() {}
+ObjectMap::ObjectMap() {
+}
 
 bool ObjectMap::typeExists(string className) {
     for (auto &i : table) {
@@ -145,7 +151,7 @@ void ObjectMap::put(string className, string extendsName) {
 }
 
 string ObjectMap::getExtendsName(string className) {
-     for (auto &i : table) {
+    for (auto &i : table) {
         if (i.getClassName() == className)
             return i.getMethodName();
     }
@@ -155,12 +161,47 @@ string ObjectMap::getExtendsName(string className) {
 ObjectMap::~ObjectMap() {
 }
 
+classFormals::classFormals(string className, vector<TypeEntry> attributes) : className(className), attributes(attributes) {
+}
+
+string classFormals::getClassName() {
+    return className;
+}
+
+vector<TypeEntry> classFormals::getAttributes() {
+    return attributes;
+}
+
+classFormalsEntries::classFormalsEntries() {
+
+}
+
+bool classFormalsEntries::hasClass(string className) {
+    for (auto &i : classformals) {
+        if (i.getClassName() == className)
+            return true;
+        return false;
+    }
+}
+
+void classFormalsEntries::addEntry(classFormals entry) {
+    classformals.push_back(entry);
+}
+
+vector<TypeEntry> classFormalsEntries::getClassAttributes(string className) {
+    for (auto &i : classformals) {
+        if (i.getClassName() == className)
+            return i.getAttributes();
+    }
+    return {TypeEntry("#ERROR", "#ERROR")};
+}
+
 SymbolTable::SymbolTable() {
     rTable.push_back(TypeMap());
     fTable = FunctionMap();
     oTable = ObjectMap();
-    addClassName("native","");
-    addClassMethod("native","native","native",{});
+    addClassName("native", "");
+    addClassMethod("native", "native", "native",{});
 }
 
 void SymbolTable::addScope() {
@@ -174,14 +215,14 @@ void SymbolTable::removeScope() {
 void SymbolTable::addVariable(string key, string value) {
     rTable.back().put(key, value);
 }
-bool SymbolTable::checkVariable(string key){
-     for (auto &i : rTable){
-         if(i.has(key))
-             return true;
-     }
-     return false;
-}
 
+bool SymbolTable::checkVariable(string key) {
+    for (auto &i : rTable) {
+        if (i.has(key))
+            return true;
+    }
+    return false;
+}
 
 int SymbolTable::checkVariable(string key, string value) {
     for (auto &i : rTable) {
@@ -212,20 +253,20 @@ void SymbolTable::addClassMethod(string className, string methodName, string typ
 
 vector <string> SymbolTable::getFormalsType(string className, string methodName) {
     vector <string> formaltypes = {"NOTYPE#"}; //= fTable.GetFormalsType(className, methodName);
-    while(formaltypes.size() == 1 && formaltypes.at(0) == "NOTYPE#" && className != ""){       
-        formaltypes = fTable.GetFormalsType(className,methodName);
+    while (formaltypes.size() == 1 && formaltypes.at(0) == "NOTYPE#" && className != "") {
+        formaltypes = fTable.GetFormalsType(className, methodName);
         className = getExtendsName(className);
     }
     return formaltypes;
 }
 
-bool SymbolTable::hasMethod(string className, string methodName){
+bool SymbolTable::hasMethod(string className, string methodName) {
     bool has = false;
-    while(!has && className != ""){       
-        has = fTable.hasMethod(className,methodName);
+    while (!has && className != "") {
+        has = fTable.hasMethod(className, methodName);
         className = getExtendsName(className);
     }
-        
+
     return has;
 }
 
@@ -243,14 +284,19 @@ string SymbolTable::getExtendsName(string className) {
 
 string SymbolTable::getMethodType(string className, string methodName) {
     string type = "";
-    while(type == "" && className != ""){  
+    while (type == "" && className != "") {
         type = fTable.getMethodType(className, methodName);
-        className = getExtendsName(className);    
+        className = getExtendsName(className);
     }
     return type;
 }
 
 string SymbolTable::getLUB(string type1, string type2) {
+    if(type1 == "Nothing")
+        return type2;
+    if(type2 == "Nothing")
+        return type1;
+    
     string lub1 = type1;
     string lub2 = type2;
     while (lub1 != lub2) {
@@ -266,12 +312,29 @@ string SymbolTable::getLUB(string type1, string type2) {
 }
 
 bool SymbolTable::isParentype(string parent, string child) {
-    while(parent != child){
+    while (parent != child) {
         child = getExtendsName(child);
-        if(child == "")
+        if (child == "")
             return false;
     }
     return true;
+}
+
+void SymbolTable::addEntries(classFormals entries) {
+    classEntries.addEntry(entries);
+}
+
+void SymbolTable::addEntries(string className, vector<TypeEntry> entries) {
+    classEntries.addEntry(classFormals(className, entries));
+}
+
+void SymbolTable::addParentsAttributes(string className) {
+    while (className != "native") {
+        className = getExtendsName(className);
+        for (auto &i : classEntries.getClassAttributes(className)) {
+            addVariable(i.getKey(), i.getValue());
+        }
+    }
 }
 
 

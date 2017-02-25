@@ -415,7 +415,7 @@ class ArrayList() extends IO()
       size = size + 1
     };
     size = n;
-    this;
+    this
   };
 
   //Inserts the provided item at the provied position.  Increases size (and

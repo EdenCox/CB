@@ -18,6 +18,7 @@ private:
 public:
     TypeChecker();
     bool make();
+    SymbolTable& getTable();
     using Visitor::visit;
     void visit(Program* prgm) override;
     void visit(Classdecls* clssdcls) override;

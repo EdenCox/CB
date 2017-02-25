@@ -2,10 +2,13 @@
 <configurationDescriptor version="97">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
+      <in>CodeGenerator.cpp</in>
+      <in>CodeGenerator.h</in>
       <in>SymbolTable.cpp</in>
       <in>SymbolTable.h</in>
       <in>TypeChecker.cpp</in>
       <in>TypeChecker.h</in>
+      <in>cfg.h</in>
       <in>lex.yy.c</in>
       <in>parser.cpp</in>
       <in>parser.h</in>

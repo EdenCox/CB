@@ -7,6 +7,10 @@ bool TypeChecker::make(){
     return compile;
 }
 
+SymbolTable& TypeChecker::getTable(){
+    return table;
+}
+
 void TypeChecker::visit(Program* prgm) {
     prgm->classes->accept(this);
 

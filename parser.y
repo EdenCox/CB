@@ -1,6 +1,7 @@
 %{
 #include "parser.h"
 #include "TypeChecker.h"
+#include "CodeGenerator.h"
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -286,6 +287,14 @@ int main(int argc, char *argv[]) {
 
 	TypeChecker* checker = new TypeChecker();
 	root->accept(checker);
+
+	CodeGenerator* generator;
+
+	if(checker->make()){
+		std::ofstream header("cfg.h", std::ios_base::binary | std::ios_base::app);
+		generator = new CodeGenerator(checker->getTable(),header,header);
+		root->accept(generator);
+	}
 	
 	
 	//root->print(0);

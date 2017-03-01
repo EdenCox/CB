@@ -4,10 +4,13 @@
     <df root="." name="0">
       <in>CodeGenerator.cpp</in>
       <in>CodeGenerator.h</in>
+      <in>SourceGenerator.cpp</in>
+      <in>SourceGenerator.h</in>
       <in>SymbolTable.cpp</in>
       <in>SymbolTable.h</in>
       <in>TypeChecker.cpp</in>
       <in>TypeChecker.h</in>
+      <in>cfg.cpp</in>
       <in>cfg.h</in>
       <in>lex.yy.c</in>
       <in>parser.cpp</in>

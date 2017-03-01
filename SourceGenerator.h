@@ -1,28 +1,30 @@
+#ifndef SOURCEGENERATOR_H
+#define SOURCEGENERATOR_H
+
 #include <string>
 #include <list>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include "parser.h"
-#include "SymbolTable.h"
 
-#ifndef CODEGENERATOR_H
-#define CODEGENERATOR_H
+
+
 
 using namespace std;
 
-class CodeGenerator : public Visitor {
+class SourceGenerator : public Visitor {
 private:
-
-    ofstream &header;
-
+    ofstream &source;
+    string constructorCode = "";
+    string currentClass;
     int tabCount = 0;
+    bool cCode,returnCode,ifCode,loopCode,blockCode = false;
 
     const std::string separator = ", ";
 
 public:
-    CodeGenerator(ofstream &header);
-    virtual ~CodeGenerator();
+    SourceGenerator(ofstream &source);
     using Visitor::visit;
     void visit(Program* prgm) override;
     void visit(Classdecls* clssdcls) override;

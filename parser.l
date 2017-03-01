@@ -97,23 +97,23 @@ INTEGER		{ZERO}|{NOTZERO}{DIGIT}*
 <STRING>\\n      {  // escaped slash, then an n
                     if (strTooLong()) { return strLenErr(); }
                     line_num++; 
-                    addToStr((char *)"\n");
+                    addToStr((char *)"\\n");
                 }
 
 <STRING>\\t     {
                     if (strTooLong()) { return strLenErr(); }
                     string_length++;
-                    addToStr((char *)"\t");
+                    addToStr((char *)"\\t");
 }
 <STRING>\\b     {
                     if (strTooLong()) { return strLenErr(); }
                     string_length++;
-                    addToStr((char *)"\b");
+                    addToStr((char *)"\\b");
 }
 <STRING>\\f     {
                     if (strTooLong()) { return strLenErr(); }
                     string_length++;
-                    addToStr((char *)"\f");
+                    addToStr((char *)"\\f");
 }
 <STRING>\\.     {
                     //escaped character, just add the character

@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string>
 #include <map>
-#include <list>
 #include <vector>
 
 using namespace std;
@@ -35,7 +34,7 @@ class Casecontent : public TreeNode{
 
 class Cases : public TreeNode{
  public:
-  list<Casecontent*> cases;
+  vector<Casecontent*> cases;
  public: 
   Cases(Casecontent* casecontent);
   void append(Casecontent* casecontent);
@@ -320,7 +319,7 @@ class InilizationBlockExpression : public BlockExpression {
 
 class Block : public TreeNode {
  public:
-  list<BlockExpression* > expressions;
+  vector<BlockExpression* > expressions;
  public:
   Block();
   Block(BlockExpression* exp);
@@ -352,7 +351,7 @@ class Formalcontent : public TreeNode {
 
 class Formalcontents : public TreeNode {
  public:
-  list<Formalcontent* > formalcontents;
+  vector<Formalcontent* > formalcontents;
  public:
   Formalcontents();
   Formalcontents(Formalcontent* formalcontent);
@@ -368,7 +367,7 @@ class Feature : public TreeNode{
 
 class Features : public TreeNode{
 public:
- list<Feature*> features;
+ vector<Feature*> features;
  
 public:
  Features();
@@ -465,7 +464,7 @@ class Vfcontent : public TreeNode {
 
 class Vfcontents : public TreeNode {
  public:
-  list<Vfcontent*> vfcontents;
+  vector<Vfcontent*> vfcontents;
  public: 
   Vfcontents();
   Vfcontents(Vfcontent* vfcontent);
@@ -489,7 +488,7 @@ class Classdecl : public TreeNode {
 
 class Classdecls : public TreeNode{
  public:
-  list<Classdecl *> classdecls;
+  vector<Classdecl *> classdecls;
  public:
   Classdecls(Classdecl * classdecl);
   void append(Classdecl * classdecl);
@@ -593,29 +592,6 @@ class Visitor {
       virtual void visit (Casecontent* casecontent) = 0;
       virtual void visit (Cases* cases) = 0;           
 };
-
-/*class TreePrinter : public Visitor {
- private:
-  int depth = 0;
- public:
-  TreePrinter();
-  using Visitor::visit;
-  void visit (Program* prgm) override;
-  void visit (Classdecls* clssdcls) override;
-  void visit (Classdecl* clssdcl) override;
-  void visit (Vfcontents* vfctnts) override;
-  void visit (Vfcontent* vfctnt) override;
-  void visit (Features* ftrs) override;
-  void visit (Feature* ftr) override;
-  void visit (Formalcontents* frmlcntnts) override;
-  void visit (Formalcontent* frmlcntnt) override;
-  void visit (Actuals* actuals) override;
-  void visit (Block* block) override;
-  void visit (BlockExpression* blockexpression) override;
-  void visit (Exp_node* expression) override;
-  void visit (Casecontent* casecontent) override;
-  void visit (Cases* cases) override;
-};*/
 
 
 

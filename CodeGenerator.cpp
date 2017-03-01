@@ -13,7 +13,7 @@
 
 #include "CodeGenerator.h"
 
-CodeGenerator::CodeGenerator(SymbolTable &table, ofstream &header, ofstream &source) : table(table), header(header), source(source) {
+CodeGenerator::CodeGenerator(ofstream &header) : header(header) {
 
 }
 
@@ -22,8 +22,8 @@ CodeGenerator::~CodeGenerator() {
 }
 
 void CodeGenerator::visit(Program* prgm) {
-    header << "#include \"BasicCool.h\"" << endl << endl;
     header << "#ifndef CGF_H" << endl << "#define CGF_H" << endl << endl;
+    header << "#include \"BasicCool.h\"" << endl << endl;
     header << "using namespace std;" << endl << endl;
     //source << "#include \"cgf.h\"" << endl << endl;
 

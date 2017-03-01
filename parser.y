@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "TypeChecker.h"
 #include "CodeGenerator.h"
+#include "SourceGenerator.h"
 #include <cstdio>
 #include <iostream>
 #include <fstream>
@@ -127,7 +128,7 @@ classdecl:
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES OPEN_ACCOLADE features CLOSE_ACCOLADE 
 	{$$ = new Classdecl($2,$4,"Any",new Actuals(),$7);}/*class C(F ) { X } =) class C(F ) extends Any() { X }*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES EXTENDS TYPE_IDENTIFIER actuals
-	OPEN_ACCOLADE features CLOSE_ACCOLADE {$10->append(new F_block(new Block(new NormalExpression(new This_exp()))));$$ = new Classdecl($2,$4,$7,$8,$10);}
+	OPEN_ACCOLADE features CLOSE_ACCOLADE {/*$10->append(new F_block(new Block(new NormalExpression(new This_exp()))))*/;$$ = new Classdecl($2,$4,$7,$8,$10);}
 	/*class C(F ) extends C 0 (A) { X } =) class C(F ) extends C 0 (A) { X { this }}*/|
 	CLASS TYPE_IDENTIFIER OPEN_PARENTHESES vfcontents CLOSE_PARENTHESES EXTENDS NATIVE OPEN_ACCOLADE features CLOSE_ACCOLADE
 	{$$ = new Classdecl($2,$4,"native",new Actuals(),$9);}|
@@ -289,15 +290,19 @@ int main(int argc, char *argv[]) {
 	root->accept(checker);
 
 	CodeGenerator* generator;
+	SourceGenerator* sGenerator;
 
 	if(checker->make()){
 		std::ofstream header("cfg.h", std::ios_base::binary | std::ios_base::app);
-		generator = new CodeGenerator(checker->getTable(),header,header);
+		generator = new CodeGenerator(header);
 		root->accept(generator);
+		std::ofstream source("cfg.cpp", std::ios_base::binary | std::ios_base::app);
+		sGenerator = new SourceGenerator(source);
+		root->accept(sGenerator);		
 	}
 	
 	
-	//root->print(0);
+	root->print(0);
 
 }
 

@@ -22,6 +22,7 @@ void resetStr();
 int strLenErr();
 int reservedKeywordError();
 extern "C" void nextFile(FILE *bffr);
+bool cppKeyWord(string word);
 
 
 
@@ -199,7 +200,16 @@ yield		{return reservedKeywordError();}
 [ \r\t\v\f] {}
 
 {INTEGER}				{ yylval.integerVal = atoi(yytext); return INTEGER_CONST;}
-{LOWERCASE}{ALPANUMERIC}*		{ yylval.object_IdentifierVal = strdup(yytext); return OBJECT_IDENTIFIER; }
+{LOWERCASE}{ALPANUMERIC}*		{ 
+						string temp;
+						if(cppKeyWord(yytext)){
+							temp = "_"+string(yytext);
+						} else{ 
+							temp = yytext;
+						}
+						yylval.object_IdentifierVal = strdup(temp.c_str()); 
+						return OBJECT_IDENTIFIER; 
+					}
 {UPPERCASE}({ALPANUMERIC})*		{ yylval.type_IdentifierVal = strdup(yytext); return TYPE_IDENTIFIER; }
 
 .	{//catch all error.
@@ -241,4 +251,8 @@ int reservedKeywordError() {
 void nextFile(FILE *bffr){
 	yyrestart(bffr);
 	//yylex();
+}
+
+bool cppKeyWord(string word){
+	return word == "char" || word == "and";
 }

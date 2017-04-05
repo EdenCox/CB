@@ -16,12 +16,12 @@ using namespace std;
 class SourceGenerator : public Visitor {
 private:
     ofstream &source;
-    string constructorCode = "";
-    string currentClass;
-    int tabCount = 0;
+    string constructorCode, nonBlockCode, currentClass = "";    
+    int caseVariableNumber = 0;
     bool cCode,returnCode,ifCode,loopCode,blockCode = false;
 
-    const std::string separator = ", ";
+    const string separator = ", ";
+    const string caseVariable = "__StAtic_CaSt__";
 
 public:
     SourceGenerator(ofstream &source);

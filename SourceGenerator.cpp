@@ -38,6 +38,27 @@ void SourceGenerator::visit(Classdecl* clssdcl) {
         currentClass = clssdcl->type_id;
         source << "string " << clssdcl->type_id << "::_type_(){\n\treturn \"" << clssdcl->type_id << "\";\n}\n\n";
         clssdcl->features->accept(this);
+        source << clssdcl->type_id << "::" << clssdcl->type_id << "(";
+        string sep = "";
+        for (auto &i : clssdcl->vfcontents->vfcontents) {
+            source << sep << i->type_id << " " << i->object_id;
+            sep = ", ";
+        }
+        source << ") : " << clssdcl->extend_type_id << "(";
+        sep = "";
+        for (auto &i : clssdcl->exp_body->expressions) {
+            source << sep;
+            i->accept(this);
+            sep = ", ";
+        }
+        sep = ", ";
+        source << ")";
+        for (auto &i : clssdcl->vfcontents->vfcontents) {
+            source << sep << i->object_id << "(" << i->object_id << ")";
+        }
+        source << "{\n" << constructorCode << "}\n\n";
+        constructorCode = "";
+
     }
 }
 
@@ -62,9 +83,8 @@ void SourceGenerator::visit(Features* ftrs) {
 void SourceGenerator::visit(F_block* ftr) {
     cCode = true;
 
-    for (auto &i : ftr->blck->expressions) {
-        i->accept(this);
-    }
+    ftr->blck->accept(this);
+
     cCode = false;
 
 }
@@ -73,7 +93,7 @@ void SourceGenerator::visit(F_expr* ftr) {
     source << ftr->type_id << " " << currentClass << "::" << ftr->object_id << "(";
     string sep = "";
     for (auto &i : ftr->formalcontents->formalcontents) {
-        source << sep << i->type_id << "& " << i->object_id;
+        source << sep << i->type_id << " " << i->object_id;
         sep = separator;
     }
     source << "){" << endl;
@@ -82,9 +102,9 @@ void SourceGenerator::visit(F_expr* ftr) {
 
     ftr->exp->accept(this);
     if (!blockCode)
-        source << ";\n";
+        source << "return " << nonBlockCode << ";\n";
     blockCode = false;
-
+    nonBlockCode = "";
     source << "}\n\n";
 
 
@@ -99,7 +119,7 @@ void SourceGenerator::visit(F_overide_expr* ftr) {
     source << ftr->type_id << " " << currentClass << "::" << ftr->object_id << "(";
     string sep = "";
     for (auto &i : ftr->formalcontents->formalcontents) {
-        source << sep << i->type_id << "& " << i->object_id;
+        source << sep << i->type_id << " " << i->object_id;
         sep = separator;
     }
     source << "){" << endl;
@@ -146,14 +166,23 @@ void SourceGenerator::visit(Block* block) {
             if (i + 1 == block->expressions.size())
                 if (!ifCode && !loopCode)
                     source << "return ";
-
-            block->expressions.at(i)->accept(this);
+        }
+        block->expressions.at(i)->accept(this);
+        if (cCode) {
+            if (ifCode) {
+                constructorCode += ", ";
+            } else {
+                constructorCode += ";\n";
+            }
+        } else {
             if (ifCode) {
                 source << ", ";
             } else {
-                source << ";" << endl;
+                source << ";\n";
             }
         }
+
+
     }
 }
 
@@ -173,52 +202,74 @@ void SourceGenerator::visit(InilizationBlockExpression* blockexpression) {
 }
 
 void SourceGenerator::visit(Assign_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->object_id + " = ";
-        expression->exp->accept(this);
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += expression->object_id + " = ";
+            expression->exp->accept(this);
+        } else {
+            source << expression->object_id << " = ";
+            expression->exp->accept(this);
+        }
     } else {
-        source << expression->object_id << " = ";
+        nonBlockCode += expression->object_id + " = ";
         expression->exp->accept(this);
     }
 }
 
 void SourceGenerator::visit(Not_exp* expression) {
-    if (cCode) {
-        constructorCode += "!";
-        expression->exp->accept(this);
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "!";
+            expression->exp->accept(this);
+        } else {
+            source << "!";
+            expression->exp->accept(this);
+        }
     } else {
-        source << "!";
+        nonBlockCode += "!";
         expression->exp->accept(this);
     }
-
 }
 
 void SourceGenerator::visit(Uminus_exp* expression) {
-    if (cCode) {
-        constructorCode += "-";
-        expression->exp->accept(this);
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "-";
+            expression->exp->accept(this);
+        } else {
+            source << "-";
+            expression->exp->accept(this);
+        }
     } else {
-        source << "-";
+        nonBlockCode += "-";
         expression->exp->accept(this);
     }
-
 }
 
 void SourceGenerator::visit(Cond_exp* expression) {
     ifCode = true;
-    if (cCode) {
-        constructorCode += "(";
-        expression->precedence->accept(this);
-        constructorCode += ") ? ";
-        expression->then_exp->accept(this);
-        constructorCode += ": ";
-        expression->else_exp->accept(this);
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "(";
+            expression->precedence->accept(this);
+            constructorCode += ") ? ";
+            expression->then_exp->accept(this);
+            constructorCode += ": ";
+            expression->else_exp->accept(this);
+        } else {
+            source << "(";
+            expression->precedence->accept(this);
+            source << ") ? ";
+            expression->then_exp->accept(this);
+            source << ": ";
+            expression->else_exp->accept(this);
+        }
     } else {
-        source << "(";
+        nonBlockCode += "(";
         expression->precedence->accept(this);
-        source << ") ? ";
+        nonBlockCode += ") ? ";
         expression->then_exp->accept(this);
-        source << ": ";
+        nonBlockCode += ": ";
         expression->else_exp->accept(this);
     }
     ifCode = false;
@@ -245,69 +296,101 @@ void SourceGenerator::visit(Loop_exp* expression) {
 }
 
 void SourceGenerator::visit(Super_exp* expression) {
-    if (cCode) {
-        constructorCode += "super." + expression->object_id + "(";
-        string sep = "";
-        for (auto &i : expression->body_exp->expressions) {
-            constructorCode + sep;
-            i->accept(this);
-            sep = separator;
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "super." + expression->object_id + "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                constructorCode + sep;
+                i->accept(this);
+                sep = separator;
+            }
+            constructorCode += ")";
+        } else {
+            source << "super." << expression->object_id << "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                source << sep;
+                i->accept(this);
+                sep = separator;
+            }
+            source << ")";
         }
-        constructorCode += ")";
     } else {
-        source << "super." << expression->object_id << "(";
+        nonBlockCode += "super." + expression->object_id + "(";
         string sep = "";
         for (auto &i : expression->body_exp->expressions) {
-            source << sep;
+            nonBlockCode + sep;
             i->accept(this);
             sep = separator;
         }
-        source << ")";
+        nonBlockCode += ")";
     }
 }
 
 void SourceGenerator::visit(Object_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->object_id + "(";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += expression->object_id + "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                constructorCode + sep;
+                i->accept(this);
+                sep = separator;
+            }
+            constructorCode += ")";
+        } else {
+            source << expression->object_id << "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                source << sep;
+                i->accept(this);
+                sep = separator;
+            }
+            source << ")";
+        }
+    } else {
+        nonBlockCode += expression->object_id + "(";
         string sep = "";
         for (auto &i : expression->body_exp->expressions) {
-            constructorCode + sep;
+            nonBlockCode + sep;
             i->accept(this);
             sep = separator;
         }
         constructorCode += ")";
-    } else {
-        source << expression->object_id << "(";
-        string sep = "";
-        for (auto &i : expression->body_exp->expressions) {
-            source << sep;
-            i->accept(this);
-            sep = separator;
-        }
-        source << ")";
     }
-
 }
 
 void SourceGenerator::visit(Newtype_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->type_id + "(";
-        string sep = "";
-        for (auto &i : expression->body_exp->expressions) {
-            constructorCode += sep;
-            i->accept(this);
-            sep = separator;
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += expression->type_id + "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                constructorCode += sep;
+                i->accept(this);
+                sep = separator;
+            }
+            constructorCode += ")";
+        } else {
+            source << expression->type_id << "(";
+            string sep = "";
+            for (auto &i : expression->body_exp->expressions) {
+                source << sep;
+                i->accept(this);
+                sep = separator;
+            }
+            source << ")";
         }
-        constructorCode += ")";
     } else {
-        source << expression->type_id << "(";
+        nonBlockCode += expression->type_id + "(";
         string sep = "";
         for (auto &i : expression->body_exp->expressions) {
-            source << sep;
+            nonBlockCode += sep;
             i->accept(this);
             sep = separator;
         }
-        source << ")";
+        nonBlockCode += ")";
     }
 
 }
@@ -327,177 +410,288 @@ void SourceGenerator::visit(Block_exp* expression) {
 }
 
 void SourceGenerator::visit(Paren_exp* expression) {
-    if (cCode) {
-        constructorCode += "(";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "(";
+        } else {
+            source << "(";
+        }
+        expression->exp->accept(this);
+        if (cCode) {
+            constructorCode += ")";
+        } else {
+            source << ")";
+        }
     } else {
-        source << "(";
-    }
-    expression->exp->accept(this);
-    if (cCode) {
-        constructorCode += ")";
-    } else {
-        source << ")";
+        if (cCode) {
+            nonBlockCode += "(";
+        } else {
+            source << "(";
+        }
     }
 }
 
 void SourceGenerator::visit(Dot_object_exp* expression) {
     expression->exp->accept(this);
-    if (cCode) {
-        constructorCode += "." + expression->object_id + "(";
-    } else {
-        source << "." << expression->object_id << "(";
-    }
-
-    string sep = "";
-    for (auto &i : expression->body_exp->expressions) {
+    if (blockCode) {
         if (cCode) {
-            constructorCode += sep;
+            constructorCode += "." + expression->object_id + "(";
         } else {
-            source << sep;
+            source << "." << expression->object_id << "(";
         }
-        i->accept(this);
-        sep = separator;
-    }
-    if (cCode) {
-        constructorCode += ")";
+
+        string sep = "";
+        for (auto &i : expression->body_exp->expressions) {
+            if (cCode) {
+                constructorCode += sep;
+            } else {
+                source << sep;
+            }
+            i->accept(this);
+            sep = separator;
+        }
+        if (cCode) {
+            constructorCode += ")";
+        } else {
+            source << ")";
+        }
     } else {
-        source << ")";
+        nonBlockCode += "." + expression->object_id + "(";
+        string sep = "";
+        for (auto &i : expression->body_exp->expressions) {
+            nonBlockCode += sep;
+            i->accept(this);
+            sep = separator;
+        }
+        nonBlockCode += ")";
     }
-}
-
-void SourceGenerator::visit(Case_exp* expression) {
-
 }
 
 void SourceGenerator::visit(Less_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "< ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "< ";
+        } else {
+            source << "< ";
+        }
     } else {
-        source << "< ";
+        nonBlockCode += "< ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Leq_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "<= ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "<= ";
+        } else {
+            source << "<= ";
+        }
     } else {
-        source << "<= ";
+        nonBlockCode += "<= ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Eq_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += " == ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += " == ";
+        } else {
+            source << " == ";
+        }
     } else {
-        source << " == ";
+        nonBlockCode += " == ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Mul_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "* ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "* ";
+        } else {
+            source << "* ";
+        }
     } else {
-        source << "* ";
+        nonBlockCode += "* ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Div_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "/ ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "/ ";
+        } else {
+            source << "/ ";
+        }
     } else {
-        source << "/ ";
+        nonBlockCode += "/ ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Add_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "+ ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "+ ";
+        } else {
+            source << "+ ";
+        }
     } else {
-        source << "+ ";
+        nonBlockCode += "+ ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Min_exp* expression) {
     expression->exp1->accept(this);
-    if (cCode) {
-        constructorCode += "- ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "- ";
+        } else {
+            source << "- ";
+        }
     } else {
-        source << "- ";
+        nonBlockCode += "- ";
     }
     expression->exp2->accept(this);
 }
 
 void SourceGenerator::visit(Null_exp* expression) {
-    if (cCode) {
-        constructorCode += "Null() ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "Null() ";
+        } else {
+            source << "Null() ";
+        }
     } else {
-        source << "Null() ";
+        nonBlockCode += "Null() ";
     }
 }
 
 void SourceGenerator::visit(Empty_exp* expression) {
-    if (cCode) {
-        constructorCode += "Unit() ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "Unit() ";
+        } else {
+            source << "Unit() ";
+        }
     } else {
-        source << "Unit() ";
+        nonBlockCode += "Unit() ";
     }
 }
 
 void SourceGenerator::visit(Object_id_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->object_id + " ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += expression->object_id + " ";
+        } else {
+            source << expression->object_id << " ";
+        }
     } else {
-        source << expression->object_id << " ";
+        nonBlockCode += expression->object_id + " ";
     }
 
 }
 
 void SourceGenerator::visit(Int_const_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->int_const + " ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "Int(" + to_string(expression->int_const) + ") ";
+        } else {
+            source << "Int(" << expression->int_const << ") ";
+        }
     } else {
-        source << expression->int_const << " ";
+        nonBlockCode += "Int(" + to_string(expression->int_const) + ") ";
     }
 }
 
 void SourceGenerator::visit(String_lit_exp* expression) {
-    if (cCode) {
-        constructorCode += "\"" + expression->string_lit + "\"";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += "String(\"" + expression->string_lit + "\")";
+        } else {
+            source << "String(\"" << expression->string_lit << "\")";
+        }
     } else {
-        source << "\"" << expression->string_lit << "\"";
+        nonBlockCode += "String(\"" + expression->string_lit + "\")";
     }
 }
 
 void SourceGenerator::visit(Bool_exp* expression) {
-    if (cCode) {
-        constructorCode += expression->boolean_const ? "true " : "false ";
+    if (blockCode) {
+        if (cCode) {
+            constructorCode += expression->boolean_const ? "Boolean(true) " : "Boolean(false) ";
+        } else {
+            string text = expression->boolean_const ? "Boolean(true) " : "Boolean(false) ";
+            source << text;
+        }
     } else {
-        source << std::boolalpha << expression->boolean_const << " ";
+        nonBlockCode += expression->boolean_const ? "Boolean(true) " : "Boolean(false) ";
     }
 }
 
 void SourceGenerator::visit(This_exp* expression) {
-    source << "*this ";
+    source << "this ";
+}
+
+void SourceGenerator::visit(Case_exp* expression) {
+    if (cCode) {
+        string elseIf = "";
+        constructorCode += "Any& " + caseVariable + to_string(caseVariableNumber) + " = ";
+        expression->exp->accept(this);
+        constructorCode += ";\n";
+        for (auto &i : expression->cases->cases) {
+            constructorCode += elseIf + "if (";
+            constructorCode += caseVariable + to_string(caseVariableNumber);
+            constructorCode += "._type_() == ";
+            i->accept(this);
+            elseIf = "else ";
+        }
+    } else {
+        string elseIf = "";
+        source << "Any& " << caseVariable << caseVariableNumber << " = ";
+        expression->exp->accept(this);
+        source << ";\n";
+        for (auto &i : expression->cases->cases) {
+            source << elseIf << "if (";
+            source << caseVariable << caseVariableNumber;
+            source << "._type_() == ";
+            i->accept(this);
+            elseIf = "else ";
+        }
+    }
+    caseVariableNumber++;
 }
 
 void SourceGenerator::visit(Casecontent* casecontent) {
+    if (cCode) {
+        constructorCode += "\"" + casecontent->type_id + "\" ){\n";
+        constructorCode += casecontent->type_id + "& " + casecontent->object_id + "  = dynamic_cast<" + casecontent->type_id + "&> (" + caseVariable + to_string(caseVariableNumber) + ");\n";
+        //Int& i = dynamic_cast<Int&> (thing);
+        casecontent->block->accept(this);
+        constructorCode + "}\n";
+    } else {
+        source << "\"" << casecontent->type_id << "\" ){" << endl;
+        source << casecontent->type_id << "& " << casecontent->object_id << "  = dynamic_cast<" << casecontent->type_id << "&> (" << caseVariable << caseVariableNumber << ");\n";
+        //Int& i = dynamic_cast<Int&> (thing);
+        casecontent->block->accept(this);
+        source << "}\n";
+    }
+
 
 }
 
 void SourceGenerator::visit(Cases* cases) {
-
+    //not used at all cases are accessed through an iterator at a higher level.
 }
 
 bool SourceGenerator::generateClass(string className) {

@@ -1,12 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   CodeGenerator.cpp
- * Author: easy
+ * Author: Eden Cox
  * 
  * Created on February 24, 2017, 2:31 PM
  */
@@ -96,7 +90,7 @@ void SourceGenerator::visit(F_expr* ftr) {
         source << sep << i->type_id << " " << i->object_id;
         sep = separator;
     }
-    source << "){" << endl;
+    source << "){\n";
 
 
 

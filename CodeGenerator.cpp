@@ -1,12 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   CodeGenerator.cpp
- * Author: easy
+ * Author: Eden Cox
  * 
  * Created on February 24, 2017, 2:31 PM
  */
@@ -22,9 +16,9 @@ CodeGenerator::~CodeGenerator() {
 }
 
 void CodeGenerator::visit(Program* prgm) {
-    header << "#ifndef CGF_H" << endl << "#define CGF_H" << endl << endl;
-    header << "#include \"BasicCool.h\"" << endl << endl;
-    header << "using namespace std;" << endl << endl;
+    header << "#ifndef CGF_H\n#define CGF_H\n\n";
+    header << "#include \"BasicCool.h\"\n\n";
+    header << "using namespace std;\n\n";
     //source << "#include \"cgf.h\"" << endl << endl;
 
     prgm->classes->accept(this);
@@ -43,22 +37,22 @@ void CodeGenerator::visit(Classdecls* clssdcls) {
 
 void CodeGenerator::visit(Classdecl* clssdcl) {
     if (generateClass(clssdcl->type_id)) {
-        header << "class " << clssdcl->type_id << " : public " << clssdcl->extend_type_id << " {" << endl << "private:" << endl;
-        header << "typedef " << clssdcl->extend_type_id << " super;" << endl << "protected:" << endl;
+        header << "class " << clssdcl->type_id << " : public " << clssdcl->extend_type_id << " {\nprivate:\n";
+        header << "typedef " << clssdcl->extend_type_id << " super;\nprotected:\n";
         clssdcl->vfcontents->accept(this);
-        header << "public:" << endl;
+        header << "public:\n";
         header << clssdcl->type_id << "(";
         std::string sep = "";
         for (auto &i : clssdcl->vfcontents->vfcontents) {
             header << sep << i->type_id << " " << i->object_id;
             sep = separator;
         }
-        header << ");" << endl;
-        header << "string _type_() override;" << endl;
+        header << ");\n" ;
+        header << "string _type_() override;\n";
 
         clssdcl->features->accept(this);
 
-        header << endl << "};" << endl << endl;
+        header << "\n};\n\n";
     }
 }
 
@@ -70,7 +64,7 @@ void CodeGenerator::visit(Vfcontents* vfctnts) {
 
 void CodeGenerator::visit(Vfcontent* vfctnt) {
 
-    header << vfctnt->type_id << " " << vfctnt->object_id << ";" << endl;
+    header << vfctnt->type_id << " " << vfctnt->object_id << ";\n";
 }
 
 void CodeGenerator::visit(Features* ftrs) {
@@ -89,10 +83,10 @@ void CodeGenerator::visit(F_expr* ftr) {
     header << "virtual " << ftr->type_id << " " << ftr->object_id << "(";
     std::string sep = "";
     for (auto &i : ftr->formalcontents->formalcontents) {
-        header << sep << i->type_id << "& " << i->object_id;
+        header << sep << i->type_id << " " << i->object_id;
         sep = separator;
     }
-    header << ");" << endl;
+    header << ");\n";
 
 
 }
@@ -105,10 +99,10 @@ void CodeGenerator::visit(F_overide_expr* ftr) {
     header << ftr->type_id << " " << ftr->object_id << "(";
     std::string sep = "";
     for (auto &i : ftr->formalcontents->formalcontents) {
-        header << sep << i->type_id << "& " << i->object_id;
+        header << sep << i->type_id << " " << i->object_id;
         sep = separator;
     }
-    header << ") override;" << endl;
+    header << ") override;\n";
 }
 
 void CodeGenerator::visit(F_overide_nat* ftr) {
@@ -117,9 +111,9 @@ void CodeGenerator::visit(F_overide_nat* ftr) {
 
 void CodeGenerator::visit(F_var_exp* ftr) {
 
-    header << "private:" << endl << ftr->type_id << " " << ftr->object_id <<" = ";
+    header << "private:\n" << ftr->type_id << " " << ftr->object_id <<" = ";
     ftr->exp->accept(this);
-    header <<";"<<endl<<"public:"<<endl;
+    header <<";\n"<<"public:\n";
 
 }
 

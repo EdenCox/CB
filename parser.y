@@ -3,10 +3,12 @@
 #include "TypeChecker.h"
 #include "CodeGenerator.h"
 #include "SourceGenerator.h"
+#include "CompilerSources.h"
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstdlib>
 #include <stdlib.h>
 #include <map>
 #include <list>
@@ -285,6 +287,7 @@ int main(int argc, char *argv[]) {
 	yyparse();
 
 	remove( "tempPars" );//remove temp reading file.
+	
 
 	TypeChecker* checker = new TypeChecker();
 	root->accept(checker);
@@ -298,11 +301,29 @@ int main(int argc, char *argv[]) {
 		root->accept(generator);
 		std::ofstream source("cfg.cpp", std::ios_base::binary | std::ios_base::app);
 		sGenerator = new SourceGenerator(source);
-		root->accept(sGenerator);		
+		root->accept(sGenerator);	
+		std::ofstream("BasicCool.h") << basicCoolHeader;
+		std::ofstream("BasicCool.cpp") << basicCoolSource;
+		std::ofstream("_CoolMain.cpp") << mainProgram;
+
+		cout<<"If no errors occure program will be saved to \"CoolProgram\" ";
+
+		std::system("g++ -o CoolProgram BasicCool.h BasicCool.cpp cfg.h cfg.cpp _CoolMain.cpp -std=c++11");		
+		string input = "";
+		cout<<"Save generated code? type \"yes\""<<endl;
+		getline (cin, input);
+
+		if(!(input == "y" || input == "yes")){
+			remove("cfg.h"); remove("cfg.cpp");
+		} else {
+			cout<<"generated code saved to cfg.h and cfg.cpp"<<endl;	
+		}
+
+		remove("_CoolMain.cpp"); remove("BasicCool.h"); remove("BasicCool.cpp"); ;
+		//std::system("./CoolProgram");		
+ 	
 	}
-	
-	
-	root->print(0);
+	//root->print(0);
 
 }
 
